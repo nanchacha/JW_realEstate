@@ -35,6 +35,10 @@ export interface ReportData {
         renew_count: number;
         jeonse_count: number;
         wolse_count: number;
+        new_jeonse_count: number;
+        new_wolse_count: number;
+        renew_jeonse_count: number;
+        renew_wolse_count: number;
     };
     stats: {
         new: {

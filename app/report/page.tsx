@@ -6,6 +6,8 @@ import Link from 'next/link';
 export default function ReportPage() {
     const [periodKey, setPeriodKey] = useState('');
     const [periods, setPeriods] = useState<string[]>([]);
+    const [dong, setDong] = useState('전체');
+    const [dongs, setDongs] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [postText, setPostText] = useState('');
@@ -31,6 +33,25 @@ export default function ReportPage() {
         fetchPeriods();
     }, []);
 
+    // 기간 변경 시 동 목록 조회
+    useEffect(() => {
+        if (!periodKey) return;
+
+        const fetchDongs = async () => {
+            try {
+                const response = await fetch(`/api/dongs?period=${periodKey}`);
+                const data = await response.json();
+                if (data.dongs) {
+                    setDongs(['전체', ...data.dongs]);
+                    setDong('전체');
+                }
+            } catch (err) {
+                console.error('동 목록 로딩 실패:', err);
+            }
+        };
+        fetchDongs();
+    }, [periodKey]);
+
     const handleGenerate = async () => {
         if (!periodKey.trim()) {
             setError('기간을 선택해주세요.');
@@ -44,7 +65,11 @@ export default function ReportPage() {
         setReportData(null);
 
         try {
-            const response = await fetch(`/api/report?period=${periodKey}`);
+            const queryParams = new URLSearchParams({
+                period: periodKey,
+                ...(dong !== '전체' && { dong }),
+            });
+            const response = await fetch(`/api/report?${queryParams}`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -83,38 +108,61 @@ export default function ReportPage() {
                 {/* Input Card */}
                 <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100">
                     <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-                        📅 기간 선택
+                        📅 옵션 선택
                     </h2>
 
                     <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                기간 선택
-                            </label>
-                            {periods.length > 0 ? (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    기간 선택
+                                </label>
+                                {periods.length > 0 ? (
+                                    <select
+                                        value={periodKey}
+                                        onChange={(e) => setPeriodKey(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
+                                    >
+                                        {periods.map((period) => (
+                                            <option key={period} value={period}>
+                                                {period}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={periodKey}
+                                        onChange={(e) => setPeriodKey(e.target.value)}
+                                        placeholder="데이터가 없습니다. 먼저 업로드해주세요."
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    />
+                                )}
+                                <p className="text-xs text-gray-500 mt-2">
+                                    업로드된 데이터에 존재하는 기간만 표시됩니다.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    법정동 선택
+                                </label>
                                 <select
-                                    value={periodKey}
-                                    onChange={(e) => setPeriodKey(e.target.value)}
+                                    value={dong}
+                                    onChange={(e) => setDong(e.target.value)}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
+                                    disabled={!periodKey || dongs.length === 0}
                                 >
-                                    {periods.map((period) => (
-                                        <option key={period} value={period}>
-                                            {period}
+                                    {dongs.map((d) => (
+                                        <option key={d} value={d}>
+                                            {d}
                                         </option>
                                     ))}
                                 </select>
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={periodKey}
-                                    onChange={(e) => setPeriodKey(e.target.value)}
-                                    placeholder="데이터가 없습니다. 먼저 업로드해주세요."
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                />
-                            )}
-                            <p className="text-xs text-gray-500 mt-2">
-                                업로드된 데이터에 존재하는 기간만 표시됩니다.
-                            </p>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    선택한 기간에 거래가 있는 동만 표시됩니다.
+                                </p>
+                            </div>
                         </div>
 
                         <button

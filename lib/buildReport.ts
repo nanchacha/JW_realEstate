@@ -1,13 +1,19 @@
 import { supabaseServer } from './supabaseServer';
 import { ReportData, Deal, TypeStat, ContractItem } from './types';
 
-export async function buildReport(periodKey: string): Promise<ReportData> {
+export async function buildReport(periodKey: string, dong?: string): Promise<ReportData> {
     // DB에서 해당 기간의 거래 데이터 조회
-    const { data: deals, error } = await supabaseServer
+    let query = supabaseServer
         .from('deals')
         .select('*')
         .eq('period_key', periodKey)
         .order('contract_date', { ascending: true });
+
+    if (dong && dong !== '전체') {
+        query = query.eq('dong', dong);
+    }
+
+    const { data: deals, error } = await query;
 
     if (error || !deals || deals.length === 0) {
         throw new Error('해당 기간의 데이터가 없습니다.');
@@ -18,7 +24,7 @@ export async function buildReport(periodKey: string): Promise<ReportData> {
         period_key: periodKey,
         period_text: deals[0].period_text || periodKey,
         city: deals[0].city || '하남시',
-        region: deals[0].region || '경기도 하남시',
+        region: dong && dong !== '전체' ? `${deals[0].city} ${dong}` : (deals[0].region || '경기도 하남시'),
     };
 
     // 요약 통계
@@ -33,6 +39,10 @@ export async function buildReport(periodKey: string): Promise<ReportData> {
         renew_count: renewDeals.length,
         jeonse_count: jeonseDeals.length,
         wolse_count: wolseDeals.length,
+        new_jeonse_count: newDeals.filter((d: Deal) => d.lease_kind === 'JEONSE').length,
+        new_wolse_count: newDeals.filter((d: Deal) => d.lease_kind === 'WOLSE').length,
+        renew_jeonse_count: renewDeals.filter((d: Deal) => d.lease_kind === 'JEONSE').length,
+        renew_wolse_count: renewDeals.filter((d: Deal) => d.lease_kind === 'WOLSE').length,
     };
 
     // 타입별 통계 생성

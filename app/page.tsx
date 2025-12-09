@@ -112,8 +112,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tech Stack */}
-        <div className="mt-12 text-center">
+        {/* Tech Stack & Settings */}
+        <div className="mt-12 text-center space-y-4">
+          <div>
+            <Link
+              href="/settings/regions"
+              className="text-gray-400 hover:text-white underline decoration-gray-600 hover:decoration-white transition-all text-sm"
+            >
+              ⚙️ 법정동 코드 관리
+            </Link>
+          </div>
           <p className="text-purple-300 text-sm">
             Powered by{' '}
             <span className="font-semibold text-white">

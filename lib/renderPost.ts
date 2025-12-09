@@ -20,9 +20,9 @@ export function renderPost(data: ReportData): string {
 
     // 요약
     text += `총 ${summary.total_count}건의 거래가 있었으며, `;
-    text += `신규 계약 ${summary.new_count}건, `;
-    text += `갱신 계약 ${summary.renew_count}건입니다.\n`;
-    text += `전세 ${summary.jeonse_count}건, 월세 ${summary.wolse_count}건입니다.\n\n`;
+    text += `신규 계약 ${summary.new_count}건(전세 ${summary.new_jeonse_count}건, 월세 ${summary.new_wolse_count}건), `;
+    text += `갱신 계약 ${summary.renew_count}건(전세 ${summary.renew_jeonse_count}건, 월세 ${summary.renew_wolse_count}건)입니다.\n`;
+    text += `전체적으로는 전세 ${summary.jeonse_count}건, 월세 ${summary.wolse_count}건입니다.\n\n`;
 
     // 신규 계약 통계
     if (stats.new.jeonse_by_type.length > 0 || stats.new.wolse_by_type.length > 0) {

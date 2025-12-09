@@ -15,8 +15,10 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        const dong = searchParams.get('dong') || undefined;
+
         // 리포트 데이터 생성
-        const reportData = await buildReport(periodKey);
+        const reportData = await buildReport(periodKey, dong);
 
         // 텍스트 및 HTML 생성
         const postText = renderPost(reportData);
