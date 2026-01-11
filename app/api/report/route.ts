@@ -15,10 +15,11 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const dong = searchParams.get('dong') || undefined;
+        const city = searchParams.get('city') || undefined;
+        const region = searchParams.get('region') || undefined;
 
         // 리포트 데이터 생성
-        const reportData = await buildReport(periodKey, dong);
+        const reportData = await buildReport(periodKey, city, region);
 
         // 텍스트 및 HTML 생성
         const postText = renderPost(reportData);

@@ -10,7 +10,13 @@ export function renderPost(data: ReportData): string {
     const periodDisplay = periodMatch ? periodMatch[0] : meta.period_text;
 
     // 지역 표시 (city + region 조합)
-    const locationDisplay = `${meta.city} ${meta.region}`.trim();
+    // meta.region이 이미 전체 주소를 포함하고 있을 수 있으므로 city 중복 제거
+    let locationDisplay = meta.region;
+    if (meta.city && meta.region.startsWith(meta.city)) {
+        locationDisplay = meta.region; // 이미 포함된 경우 그대로 사용
+    } else if (meta.city) {
+        locationDisplay = `${meta.city} ${meta.region}`.trim();
+    }
 
     // 제목
     text += `${periodDisplay} ${locationDisplay} 아파트 전·월세 실거래 정리\n\n`;

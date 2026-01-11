@@ -1,7 +1,7 @@
 import { supabaseServer } from './supabaseServer';
 import { ReportData, Deal, TypeStat, ContractItem } from './types';
 
-export async function buildReport(periodKey: string, dong?: string): Promise<ReportData> {
+export async function buildReport(periodKey: string, city?: string, region?: string): Promise<ReportData> {
     // DB에서 해당 기간의 거래 데이터 조회
     let query = supabaseServer
         .from('deals')
@@ -9,8 +9,12 @@ export async function buildReport(periodKey: string, dong?: string): Promise<Rep
         .eq('period_key', periodKey)
         .order('contract_date', { ascending: true });
 
-    if (dong && dong !== '전체') {
-        query = query.eq('dong', dong);
+    if (city) {
+        query = query.eq('city', city);
+    }
+
+    if (region) {
+        query = query.eq('region', region);
     }
 
     const { data: deals, error } = await query;
@@ -20,11 +24,27 @@ export async function buildReport(periodKey: string, dong?: string): Promise<Rep
     }
 
     // 메타 정보
+    // 메타 정보
+    const cityVal = deals[0].city || city || '';
+    const regionVal = deals[0].region || '';
+
+    let locationText = '';
+    if (cityVal && regionVal) {
+        // regionVal이 cityVal을 포함하지 않을 때만 앞에 cityVal을 붙임
+        if (regionVal.startsWith(cityVal)) {
+            locationText = regionVal;
+        } else {
+            locationText = `${cityVal} ${regionVal}`;
+        }
+    } else {
+        locationText = regionVal || cityVal || '지역 정보 없음';
+    }
+
     const meta = {
         period_key: periodKey,
         period_text: deals[0].period_text || periodKey,
-        city: deals[0].city || '하남시',
-        region: dong && dong !== '전체' ? `${deals[0].city} ${dong}` : (deals[0].region || '경기도 하남시'),
+        city: cityVal,
+        region: locationText,
     };
 
     // 요약 통계

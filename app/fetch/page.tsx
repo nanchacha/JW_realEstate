@@ -16,12 +16,16 @@ export default function FetchDataPage() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState('');
+    const [loadError, setLoadError] = useState('');
 
     // 법정동코드 목록 로드
     useEffect(() => {
         const fetchRegionCodes = async () => {
             try {
                 const response = await fetch('/api/region-codes');
+                if (!response.ok) {
+                    throw new Error('서버 오류');
+                }
                 const data = await response.json();
                 if (data.codes) {
                     setRegionCodes(data.codes);
@@ -31,6 +35,7 @@ export default function FetchDataPage() {
                 }
             } catch (err) {
                 console.error('법정동코드 로딩 실패:', err);
+                setLoadError('지역 목록 로딩 실패 (DB 확인 필요)');
             }
         };
         fetchRegionCodes();
@@ -107,10 +112,11 @@ export default function FetchDataPage() {
                             ) : (
                                 <input
                                     type="text"
-                                    value={lawdCd}
+                                    value={loadError || lawdCd}
                                     onChange={(e) => setLawdCd(e.target.value)}
-                                    placeholder="법정동코드 로딩 중..."
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-gray-900"
+                                    placeholder={loadError ? "지역 로딩 실패" : "법정동코드 로딩 중..."}
+                                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-gray-900 ${loadError ? 'border-red-300 bg-red-50 text-red-900' : 'border-gray-300'
+                                        }`}
                                     disabled
                                 />
                             )}

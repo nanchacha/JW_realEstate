@@ -6,8 +6,8 @@ import Link from 'next/link';
 export default function ReportPage() {
     const [periodKey, setPeriodKey] = useState('');
     const [periods, setPeriods] = useState<string[]>([]);
-    const [dong, setDong] = useState('전체');
-    const [dongs, setDongs] = useState<string[]>([]);
+    const [region, setRegion] = useState('전체');
+    const [regions, setRegions] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [postText, setPostText] = useState('');
@@ -33,23 +33,23 @@ export default function ReportPage() {
         fetchPeriods();
     }, []);
 
-    // 기간 변경 시 동 목록 조회
+    // 기간 변경 시 지역 목록 조회
     useEffect(() => {
         if (!periodKey) return;
 
-        const fetchDongs = async () => {
+        const fetchRegions = async () => {
             try {
-                const response = await fetch(`/api/dongs?period=${periodKey}`);
+                const response = await fetch(`/api/regions?period=${periodKey}`);
                 const data = await response.json();
-                if (data.dongs) {
-                    setDongs(['전체', ...data.dongs]);
-                    setDong('전체');
+                if (data.regions) {
+                    setRegions(['전체', ...data.regions]);
+                    setRegion('전체');
                 }
             } catch (err) {
-                console.error('동 목록 로딩 실패:', err);
+                console.error('지역 목록 로딩 실패:', err);
             }
         };
-        fetchDongs();
+        fetchRegions();
     }, [periodKey]);
 
     const handleGenerate = async () => {
@@ -67,8 +67,18 @@ export default function ReportPage() {
         try {
             const queryParams = new URLSearchParams({
                 period: periodKey,
-                ...(dong !== '전체' && { dong }),
             });
+
+            if (region !== '전체') {
+                const parts = region.split(' ');
+                const city = parts[0];
+                const regionName = parts.slice(1).join(' ');
+
+                queryParams.append('city', city);
+                if (regionName) {
+                    queryParams.append('region', regionName);
+                }
+            }
             const response = await fetch(`/api/report?${queryParams}`);
             const data = await response.json();
 
@@ -145,22 +155,22 @@ export default function ReportPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    법정동 선택
+                                    지역 선택 (시/구)
                                 </label>
                                 <select
-                                    value={dong}
-                                    onChange={(e) => setDong(e.target.value)}
+                                    value={region}
+                                    onChange={(e) => setRegion(e.target.value)}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
-                                    disabled={!periodKey || dongs.length === 0}
+                                    disabled={!periodKey || regions.length === 0}
                                 >
-                                    {dongs.map((d) => (
-                                        <option key={d} value={d}>
-                                            {d}
+                                    {regions.map((r) => (
+                                        <option key={r} value={r}>
+                                            {r}
                                         </option>
                                     ))}
                                 </select>
                                 <p className="text-xs text-gray-500 mt-2">
-                                    선택한 기간에 거래가 있는 동만 표시됩니다.
+                                    선택한 기간에 거래가 있는 지역만 표시됩니다.
                                 </p>
                             </div>
                         </div>
