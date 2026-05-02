@@ -145,7 +145,7 @@ export default function ReportPage() {
                                         value={periodKey}
                                         onChange={(e) => setPeriodKey(e.target.value)}
                                         placeholder="데이터가 없습니다. 먼저 업로드해주세요."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-black"
                                     />
                                 )}
                                 <p className="text-xs text-gray-500 mt-2">

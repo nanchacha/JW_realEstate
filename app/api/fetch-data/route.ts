@@ -26,12 +26,13 @@ interface MolitApiItem {
 }
 
 /**
- * 국토교통부 API에서 전월세 데이터를 가져오는 함수
+ * 국토교통부 API에서 한 페이지의 전월세 데이터를 가져오는 함수
  */
-async function fetchMolitData(
+async function fetchMolitDataPage(
     lawdCd: string,
-    dealYmd: string
-): Promise<MolitApiItem[]> {
+    dealYmd: string,
+    pageNo: number
+): Promise<{ items: MolitApiItem[], totalCount: number }> {
     const apiKey = process.env.MOLIT_API_KEY;
 
     if (!apiKey) {
@@ -45,7 +46,7 @@ async function fetchMolitData(
         LAWD_CD: lawdCd,
         DEAL_YMD: dealYmd,
         numOfRows: '1000',
-        pageNo: '1',
+        pageNo: pageNo.toString(),
     });
 
     const url = `${baseUrl}?${params}`;
@@ -62,7 +63,7 @@ async function fetchMolitData(
         return new Promise((resolve, reject) => {
             parseString(xmlText, { explicitArray: true }, (err, result) => {
                 if (err) {
-                    console.error('XML 파싱 오류:', err);
+                    console.error(`XML 파싱 오류 (페이지 ${pageNo}):`, err);
                     reject(err);
                     return;
                 }
@@ -75,8 +76,10 @@ async function fetchMolitData(
                     const resultCode = header?.resultCode?.[0];
                     const resultMsg = header?.resultMsg?.[0];
 
-                    console.log('API 결과 코드:', resultCode);
-                    console.log('API 결과 메시지:', resultMsg);
+                    if (pageNo === 1) {
+                        console.log('API 결과 코드:', resultCode);
+                        console.log('API 결과 메시지:', resultMsg);
+                    }
 
                     if (resultCode !== '00' && resultCode !== '000') {
                         reject(new Error(`API 오류: ${resultMsg} (코드: ${resultCode})`));
@@ -84,19 +87,52 @@ async function fetchMolitData(
                     }
 
                     const items = body?.items?.[0]?.item || [];
-                    console.log(`추출된 데이터 건수: ${items.length}`);
+                    const totalCount = parseInt(body?.totalCount?.[0] || '0', 10);
+                    
+                    if (pageNo === 1) {
+                        console.log(`전체 데이터 건수: ${totalCount}`);
+                    }
+                    console.log(`페이지 ${pageNo} 추출된 데이터 건수: ${items.length}`);
 
-                    resolve(items);
+                    resolve({ items, totalCount });
                 } catch (parseError) {
-                    console.error('응답 파싱 오류:', parseError);
+                    console.error(`응답 파싱 오류 (페이지 ${pageNo}):`, parseError);
                     reject(parseError);
                 }
             });
         });
     } catch (error: any) {
-        console.error('국토교통부 API 호출 오류:', error);
+        console.error(`국토교통부 API 호출 오류 (페이지 ${pageNo}):`, error);
         throw error;
     }
+}
+
+/**
+ * 국토교통부 API에서 전월세 데이터를 모두 가져오는 함수
+ */
+async function fetchMolitData(
+    lawdCd: string,
+    dealYmd: string
+): Promise<MolitApiItem[]> {
+    let allItems: MolitApiItem[] = [];
+    let pageNo = 1;
+    let totalCount = 0;
+    
+    do {
+        const result = await fetchMolitDataPage(lawdCd, dealYmd, pageNo);
+        allItems = allItems.concat(result.items);
+        totalCount = result.totalCount;
+        
+        // 데이터가 더 이상 없거나 총 개수에 도달하면 중단
+        if (allItems.length >= totalCount || result.items.length === 0) {
+            break;
+        }
+        
+        pageNo++;
+    } while (true);
+    
+    console.log(`총 수집된 데이터 건수: ${allItems.length}`);
+    return allItems;
 }
 
 function parseRegionCode(lawdCd: string): { city: string; region: string } {

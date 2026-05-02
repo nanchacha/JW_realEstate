@@ -11,7 +11,14 @@ interface RegionCode {
 
 export default function FetchDataPage() {
     const [lawdCd, setLawdCd] = useState('');
-    const [dealYmd, setDealYmd] = useState('202512');
+    const [dealYmd, setDealYmd] = useState('');
+
+    useEffect(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        setDealYmd(`${year}${month}`);
+    }, []);
     const [regionCodes, setRegionCodes] = useState<RegionCode[]>([]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -138,7 +145,7 @@ export default function FetchDataPage() {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-900"
                             />
                             <p className="text-xs text-gray-900 mt-2">
-                                예: 2025년 12월 = 202512
+                                예: 2026년 02월 = 202602
                             </p>
                         </div>
 
