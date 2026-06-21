@@ -187,6 +187,8 @@ function parseRegionCode(lawdCd: string): { city: string; region: string } {
         '11740': '강동구',
         '41450': '하남시',
         '41130': '성남시',
+        '41310': '구리시',
+        '41360': '남양주시',
     };
 
     const city = cityMap[cityCode] || '알 수 없음';

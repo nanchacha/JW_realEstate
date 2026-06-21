@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AutoFetchButton from './components/AutoFetchButton';
 
 export default function Home() {
   return (
@@ -20,8 +21,11 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Auto Fetch Week Button */}
+        <AutoFetchButton />
+
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid md:grid-cols-3 gap-8 mb-16 mt-8">
           {/* Auto Fetch Card */}
           <Link
             href="/fetch"
