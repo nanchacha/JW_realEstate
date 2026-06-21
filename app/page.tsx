@@ -25,7 +25,7 @@ export default function Home() {
         <AutoFetchButton />
 
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16 mt-8">
+        <div className="grid md:grid-cols-2 gap-8 mb-16 mt-8">
           {/* Auto Fetch Card */}
           <Link
             href="/fetch"
@@ -43,23 +43,7 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* Upload Card */}
-          <Link
-            href="/upload"
-            className="group bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer"
-          >
-            <div className="text-6xl mb-4">📤</div>
-            <h2 className="text-3xl font-bold text-white mb-4 group-hover:text-yellow-300 transition-colors">
-              Excel 업로드
-            </h2>
-            <p className="text-purple-200 text-lg leading-relaxed">
-              국토교통부에서 다운로드한 실거래가 Excel 파일을 업로드하세요.
-              자동으로 파싱하여 데이터베이스에 저장합니다.
-            </p>
-            <div className="mt-6 text-yellow-300 font-semibold flex items-center group-hover:translate-x-2 transition-transform">
-              시작하기 →
-            </div>
-          </Link>
+
 
           {/* Report Card */}
           <Link
