@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Infographic from '../components/Infographic';
 
 export default function ReportPage() {
     const [periodKey, setPeriodKey] = useState('');
@@ -13,6 +14,8 @@ export default function ReportPage() {
     const [postText, setPostText] = useState('');
     const [tablesHtml, setTablesHtml] = useState('');
     const [reportData, setReportData] = useState<any>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiBlogText, setAiBlogText] = useState('');
 
     // 사용 가능한 기간 목록 조회
     useEffect(() => {
@@ -63,6 +66,7 @@ export default function ReportPage() {
         setPostText('');
         setTablesHtml('');
         setReportData(null);
+        setAiBlogText('');
 
         try {
             const queryParams = new URLSearchParams({
@@ -100,6 +104,33 @@ export default function ReportPage() {
         navigator.clipboard.writeText(text).then(() => {
             alert(`${type}가 클립보드에 복사되었습니다!`);
         });
+    };
+
+    const handleAIGenerate = async () => {
+        if (!reportData) return;
+        setAiLoading(true);
+        try {
+            const response = await fetch('/api/generate-blog', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    periodText: reportData.deals?.[0]?.period_text || periodKey,
+                    region: region === '전체' ? '전체 지역' : region,
+                    summary: reportData.summary
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                setAiBlogText(data.text);
+            } else {
+                alert(data.error || 'AI 글 생성 실패');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('오류가 발생했습니다.');
+        } finally {
+            setAiLoading(false);
+        }
     };
 
     return (
@@ -233,6 +264,48 @@ export default function ReportPage() {
                             </div>
                         </div>
 
+                        {/* AI Action Area */}
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl shadow-lg p-8 mb-8 border border-blue-100 flex flex-col items-center justify-center text-center">
+                            <h2 className="text-2xl font-bold text-indigo-900 mb-2">✨ AI 블로그 & 인포그래픽 자동화</h2>
+                            <p className="text-indigo-700 mb-6">요약된 데이터를 바탕으로 티스토리 블로그 글 초안과 예쁜 인포그래픽을 즉시 생성합니다.</p>
+                            
+                            <button
+                                onClick={handleAIGenerate}
+                                disabled={aiLoading}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 px-10 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl disabled:opacity-50 transition-all flex items-center gap-2"
+                            >
+                                {aiLoading ? 'AI가 블로그 글을 작성 중입니다...' : '📝 AI 블로그 글 초안 작성하기'}
+                            </button>
+                        </div>
+
+                        {/* AI Blog Result */}
+                        {aiBlogText && (
+                            <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-indigo-200">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-semibold text-indigo-900 flex items-center gap-2">
+                                        🤖 AI 생성 블로그 초안
+                                    </h2>
+                                    <button
+                                        onClick={() => copyToClipboard(aiBlogText, 'AI 블로그 초안')}
+                                        className="bg-indigo-100 text-indigo-700 py-2 px-6 rounded-lg font-bold shadow-sm hover:bg-indigo-200 transition-all"
+                                    >
+                                        📋 초안 복사하기
+                                    </button>
+                                </div>
+                                <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 prose prose-indigo max-w-none">
+                                    <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">{aiBlogText}</pre>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Infographic Section */}
+                        <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100 flex flex-col items-center">
+                            <h2 className="text-2xl font-semibold text-gray-800 mb-6 w-full text-left">
+                                🎨 자동 생성 인포그래픽
+                            </h2>
+                            <Infographic data={reportData} region={region} periodKey={periodKey} />
+                        </div>
+
                         {/* Post Text Card */}
                         <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100">
                             <div className="flex justify-between items-center mb-6">
@@ -282,10 +355,10 @@ export default function ReportPage() {
                 {/* Navigation */}
                 <div className="text-center">
                     <Link
-                        href="/upload"
+                        href="/"
                         className="inline-block bg-white text-indigo-600 py-3 px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-indigo-200"
                     >
-                        📤 업로드 페이지
+                        🏠 메인으로 돌아가기
                     </Link>
                 </div>
             </div>
