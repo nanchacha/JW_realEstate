@@ -230,11 +230,10 @@ function convertMolitDataToDeal(item: MolitApiItem, lawdCd: string): Deal | null
         }
 
         const dateDay = dateObj.getDate();
-        let week = 1;
-        if (dateDay <= 7) week = 1;
-        else if (dateDay <= 14) week = 2;
-        else if (dateDay <= 21) week = 3;
-        else week = 4;
+        const firstDayOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+        const firstDayWeekday = firstDayOfMonth.getDay() || 7; 
+        const offsetDate = dateDay + firstDayWeekday - 2;
+        const week = Math.floor(offsetDate / 7) + 1;
 
         const period_key = `${year}-${month}-W${week}`;
         const period_text = `${year}년 ${parseInt(month)}월 ${week}주차`;

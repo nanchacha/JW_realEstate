@@ -30,15 +30,24 @@ export async function POST(request: NextRequest) {
             // 1. 폐지여부가 '존재'인 경우만 처리
             if (status !== '존재') continue;
 
-            // 2. 법정동명이 '시'로 끝나는 경우만 처리 (구/군 제외)
-            if (!nameFull.endsWith('시')) continue;
+            // 2. 시/도 단위 제외 및 읍/면/동 제외
+            // 법정동 코드는 10자리이며, 시/군/구 코드는 보통 끝 5자리가 '00000' 입니다.
+            // 시/도 단위(예: 서울특별시 1100000000)는 3~5번째 자리가 '000' 입니다.
+            if (!codeFull.endsWith('00000') || codeFull.substring(2, 5) === '000') continue;
 
-            // 3. 법정동코드 앞 5자리 추출
+            // 3. 지역 필터링: '시'로 끝나는 곳은 모두 허용, 서울(11)/인천(28)/경기(41)는 '구', '군'도 허용
+            const isCapitalArea = codeFull.startsWith('11') || codeFull.startsWith('28') || codeFull.startsWith('41');
+            const isCity = nameFull.endsWith('시');
+            const isGuOrGun = nameFull.endsWith('구') || nameFull.endsWith('군');
+
+            if (!isCity && !(isCapitalArea && isGuOrGun)) continue;
+
+            // 4. 법정동코드 앞 5자리 추출
             const code5 = codeFull.substring(0, 5);
 
-            // 4. 시/도, 시/군/구 분리
+            // 5. 시/도, 시/군/구 분리
             // 예: "경기도 수원시" -> city: "경기도", region: "수원시"
-            // 예: "서울특별시" -> city: "서울특별시", region: "서울특별시" (화면 표시 등을 위해 동일하게 설정)
+            // 예: "서울특별시 종로구" -> city: "서울특별시", region: "종로구"
             const nameParts = nameFull.split(' ');
             let city = nameParts[0];
             let region = nameParts.length > 1 ? nameParts.slice(1).join(' ') : nameParts[0];

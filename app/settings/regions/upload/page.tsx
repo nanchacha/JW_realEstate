@@ -28,8 +28,10 @@ export default function RegionUploadPage() {
         setResult(null);
 
         try {
-            // 파일 내용을 텍스트로 읽기
-            const text = await file.text();
+            // 파일 내용을 EUC-KR로 디코딩해서 읽기 (정부 제공 법정동코드 txt 파일은 주로 EUC-KR 인코딩)
+            const arrayBuffer = await file.arrayBuffer();
+            const decoder = new TextDecoder('euc-kr');
+            const text = decoder.decode(arrayBuffer);
 
             const response = await fetch('/api/region-codes/upload', {
                 method: 'POST',
