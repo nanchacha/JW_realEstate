@@ -197,9 +197,8 @@ function parseRegionCode(lawdCd: string): { city: string; region: string } {
     return { city, region };
 }
 
-function convertMolitDataToDeal(item: MolitApiItem, lawdCd: string): Deal | null {
+function convertMolitDataToDeal(item: MolitApiItem, city: string, region: string): Deal | null {
     try {
-        const { city, region } = parseRegionCode(lawdCd);
         const dong = item.umdNm?.[0] || item.jibun?.[0] || '';
 
         const monthlyRentStr = (item.monthlyRent?.[0] || '0').replace(/,/g, '').trim();
@@ -285,6 +284,25 @@ export async function POST(request: NextRequest) {
 
         console.log(`데이터 수집 시작: 법정동코드=${lawdCd}, 계약년월=${dealYmd}`);
 
+        // DB에서 지역 정보 조회 (region_codes 테이블)
+        const { data: regionData } = await supabaseServer
+            .from('region_codes')
+            .select('city, region')
+            .eq('code', lawdCd)
+            .single();
+
+        let targetCity = '알 수 없음';
+        let targetRegion = '알 수 없음';
+
+        if (regionData) {
+            targetCity = regionData.city;
+            targetRegion = regionData.region;
+        } else {
+            const fallback = parseRegionCode(lawdCd);
+            targetCity = fallback.city;
+            targetRegion = fallback.region;
+        }
+
         const apiData = await fetchMolitData(lawdCd, dealYmd);
 
         if (apiData.length === 0) {
@@ -298,7 +316,7 @@ export async function POST(request: NextRequest) {
         console.log(`API에서 받은 데이터: ${apiData.length}건`);
 
         const deals = apiData
-            .map(item => convertMolitDataToDeal(item, lawdCd))
+            .map(item => convertMolitDataToDeal(item, targetCity, targetRegion))
             .filter((deal): deal is Deal => deal !== null);
 
         console.log(`변환 완료된 데이터: ${deals.length}건`);

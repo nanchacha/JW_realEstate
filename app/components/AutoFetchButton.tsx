@@ -2,16 +2,7 @@
 
 import { useState } from 'react';
 
-const REGIONS = [
-    { code: '11680', name: '서울시 강남구' },
-    { code: '11710', name: '서울시 송파구' },
-    { code: '11740', name: '서울시 강동구' },
-    { code: '11200', name: '서울시 성동구' },
-    { code: '11380', name: '서울시 은평구' },
-    { code: '41450', name: '경기도 하남시' },
-    { code: '41360', name: '경기도 남양주시' },
-    { code: '41310', name: '경기도 구리시' },
-];
+// DB에서 동적으로 지역 목록을 가져오도록 수정
 
 export default function AutoFetchButton() {
     const [loading, setLoading] = useState(false);
@@ -30,9 +21,21 @@ export default function AutoFetchButton() {
         let successCount = 0;
         let failCount = 0;
 
-        for (let i = 0; i < REGIONS.length; i++) {
-            const region = REGIONS[i];
-            setStatusText(`${region.name} 수집 중... (${i + 1}/${REGIONS.length})`);
+        try {
+            const rcRes = await fetch('/api/region-codes');
+            const rcData = await rcRes.json();
+            const regionsToFetch = rcData.codes || [];
+
+            if (regionsToFetch.length === 0) {
+                setStatusText('수집할 지역이 없습니다. 먼저 지역을 업로드해주세요.');
+                setLoading(false);
+                return;
+            }
+
+            for (let i = 0; i < regionsToFetch.length; i++) {
+                const region = regionsToFetch[i];
+                const regionName = `${region.city} ${region.region}`;
+                setStatusText(`${regionName} 수집 중... (${i + 1}/${regionsToFetch.length})`);
             
             try {
                 const response = await fetch('/api/fetch-data', {
@@ -43,19 +46,22 @@ export default function AutoFetchButton() {
                 
                 const data = await response.json();
                 if (!response.ok) {
-                    console.error(`${region.name} 오류:`, data.error);
+                    console.error(`${regionName} 오류:`, data.error);
                     failCount++;
                 } else {
                     successCount++;
                 }
             } catch (err) {
-                console.error(`${region.name} 수집 중 오류:`, err);
+                console.error(`${regionName} 수집 중 오류:`, err);
                 failCount++;
             }
-            setProgress(((i + 1) / REGIONS.length) * 100);
+            setProgress(((i + 1) / regionsToFetch.length) * 100);
+            }
+            setStatusText(`완료! (성공: ${successCount}지역, 실패: ${failCount}지역)`);
+        } catch (err) {
+            console.error('지역 목록 로딩 오류:', err);
+            setStatusText('지역 목록을 불러오는 중 오류가 발생했습니다.');
         }
-        
-        setStatusText(`완료! (성공: ${successCount}지역, 실패: ${failCount}지역)`);
         setTimeout(() => {
             setLoading(false);
             setTimeout(() => {

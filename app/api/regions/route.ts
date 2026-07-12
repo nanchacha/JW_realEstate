@@ -13,23 +13,37 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const { data, error } = await supabaseServer
-            .from('deals')
-            .select('city, region')
-            .eq('period_key', periodKey);
+        let regionsSet = new Set<string>();
+        let hasMore = true;
+        let page = 0;
 
-        if (error) {
-            throw error;
-        }
+        // Supabase의 1000건 제한을 우회하기 위해 페이지네이션으로 전체 스캔
+        while (hasMore && page < 50) {
+            const { data, error } = await supabaseServer
+                .from('deals')
+                .select('city, region')
+                .eq('period_key', periodKey)
+                .range(page * 1000, (page + 1) * 1000 - 1);
 
-        // 중복 제거
-        const regionsSet = new Set<string>();
-        data.forEach((item: any) => {
-            const regionStr = `${item.city} ${item.region}`.trim();
-            if (regionStr) {
-                regionsSet.add(regionStr);
+            if (error) {
+                throw error;
             }
-        });
+
+            if (data && data.length > 0) {
+                data.forEach((item: any) => {
+                    const regionStr = `${item.city} ${item.region}`.trim();
+                    if (regionStr && regionStr !== '알 수 없음') {
+                        regionsSet.add(regionStr);
+                    }
+                });
+                if (data.length < 1000) {
+                    hasMore = false;
+                }
+            } else {
+                hasMore = false;
+            }
+            page++;
+        }
 
         const regions = Array.from(regionsSet).sort();
 
