@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Infographic from '../components/Infographic';
 
@@ -16,6 +16,8 @@ export default function ReportPage() {
     const [reportData, setReportData] = useState<any>(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiBlogText, setAiBlogText] = useState('');
+    const [aiInfographicData, setAiInfographicData] = useState<any>(null);
+    const infographicRef = useRef<any>(null);
 
     // 사용 가능한 기간 목록 조회
     useEffect(() => {
@@ -67,6 +69,7 @@ export default function ReportPage() {
         setTablesHtml('');
         setReportData(null);
         setAiBlogText('');
+        setAiInfographicData(null);
 
         try {
             const queryParams = new URLSearchParams({
@@ -107,21 +110,53 @@ export default function ReportPage() {
     };
 
     const handleAIGenerate = async () => {
-        if (!reportData) return;
+        if (!periodKey) return;
         setAiLoading(true);
         try {
+            let city, regionName;
+            if (region !== '전체') {
+                const parts = region.split(' ');
+                city = parts[0];
+                regionName = parts.slice(1).join(' ');
+            }
+
             const response = await fetch('/api/generate-blog', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    periodText: reportData.deals?.[0]?.period_text || periodKey,
-                    region: region === '전체' ? '전체 지역' : region,
-                    summary: reportData.summary
+                    periodKey: periodKey,
+                    city: city,
+                    region: regionName
                 })
             });
             const data = await response.json();
             if (data.success) {
-                setAiBlogText(data.text);
+                let finalHtml = data.text;
+                if (data.infographicData) {
+                    setAiInfographicData(data.infographicData);
+                    
+                    // 렌더링 대기
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    
+                    try {
+                        const base64 = await infographicRef.current?.getBase64();
+                        if (base64) {
+                            const imgTag = `<p style="text-align: center; margin-bottom: 30px;"><img src="${base64}" alt="인포그래픽" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></p>`;
+                            const replaced = finalHtml.replace(/<!--\s*인포그래픽\s*이미지\s*삽입\s*위치\s*-->/gi, imgTag);
+                            if (replaced === finalHtml) {
+                                console.warn("HTML 치환 실패: 주석을 찾을 수 없습니다.");
+                            } else {
+                                finalHtml = replaced;
+                            }
+                        } else {
+                            alert("인포그래픽 이미지 자동 캡처에 실패했습니다. 수동으로 복사/다운로드 해주세요.");
+                        }
+                    } catch (err) {
+                        console.error('인포그래픽 자동 캡처 오류:', err);
+                        alert("인포그래픽 캡처 중 오류가 발생했습니다.");
+                    }
+                }
+                setAiBlogText(finalHtml);
             } else {
                 alert(data.error || 'AI 글 생성 실패');
             }
@@ -286,24 +321,34 @@ export default function ReportPage() {
                                         🤖 AI 생성 블로그 초안
                                     </h2>
                                     <button
-                                        onClick={() => copyToClipboard(aiBlogText, 'AI 블로그 초안')}
+                                        onClick={() => copyToClipboard(aiBlogText, 'AI 블로그 HTML')}
                                         className="bg-indigo-100 text-indigo-700 py-2 px-6 rounded-lg font-bold shadow-sm hover:bg-indigo-200 transition-all"
                                     >
-                                        📋 초안 복사하기
+                                        📋 HTML 소스 복사하기
                                     </button>
                                 </div>
-                                <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 prose prose-indigo max-w-none">
-                                    <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">{aiBlogText}</pre>
+                                <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 prose prose-indigo max-w-none text-gray-900">
+                                    <div dangerouslySetInnerHTML={{ __html: aiBlogText }} />
                                 </div>
+                                <details className="cursor-pointer mt-4">
+                                    <summary className="text-sm text-indigo-700 font-medium hover:text-indigo-900 transition-colors">
+                                        HTML 소스 코드 보기
+                                    </summary>
+                                    <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-xs mt-4 border border-gray-300 text-gray-900 whitespace-pre-wrap">
+                                        {aiBlogText}
+                                    </pre>
+                                </details>
                             </div>
                         )}
 
                         {/* Infographic Section */}
-                        <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100 flex flex-col items-center">
+                        <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-gray-100 flex flex-col items-center overflow-x-auto w-full">
                             <h2 className="text-2xl font-semibold text-gray-800 mb-6 w-full text-left">
                                 🎨 자동 생성 인포그래픽
                             </h2>
-                            <Infographic data={reportData} region={region} periodKey={periodKey} />
+                            <div className="min-w-max">
+                                <Infographic ref={infographicRef} data={reportData} region={region} periodKey={periodKey} aiData={aiInfographicData} />
+                            </div>
                         </div>
 
                         {/* Post Text Card */}

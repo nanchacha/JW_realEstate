@@ -44,8 +44,8 @@ function convertMolitDataToDeal(item: MolitApiItem, lawdCd: string): Deal | null
         // period_key 생성
         const dateDay = dateObj.getDate();
         const firstDayOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-        const firstDayWeekday = firstDayOfMonth.getDay() || 7; 
-        const offsetDate = dateDay + firstDayWeekday - 2;
+        const firstDayWeekday = firstDayOfMonth.getDay(); 
+        const offsetDate = dateDay + firstDayWeekday - 1;
         const week = Math.floor(offsetDate / 7) + 1;
 
         const period_key = `${year}-${month}-W${week}`;

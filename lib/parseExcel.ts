@@ -149,11 +149,10 @@ function generatePeriodKey(dateStr: string): string {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = date.getDate();
 
-    let week = 1;
-    if (day <= 7) week = 1;
-    else if (day <= 14) week = 2;
-    else if (day <= 21) week = 3;
-    else week = 4;
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const firstDayWeekday = firstDayOfMonth.getDay(); 
+    const offsetDate = day + firstDayWeekday - 1;
+    const week = Math.floor(offsetDate / 7) + 1;
 
     return `${year}-${month}-W${week}`;
 }
